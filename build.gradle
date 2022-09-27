@@ -1,0 +1,41 @@
+plugins {
+    id 'org.springframework.boot' version '2.6.4'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+    id 'idea'
+    id 'eclipse'
+    id 'maven-publish'
+}
+
+group = 'com.hertz'
+version = "SNAPSHOT-1.0.0"
+sourceCompatibility = '11'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+        exclude group: 'junit', module: 'junit'
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+
+}
+
+
