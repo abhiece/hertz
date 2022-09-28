@@ -26,7 +26,7 @@ public class LibraryController {
      */
     @PostMapping(path = "/addBooks", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> addBooks(@RequestBody List<Book> books) {
-        HttpStatus status = HttpStatus.OK;
+        HttpStatus status = HttpStatus.CREATED;
         try {
             libraryService.addBooks(books);
         } catch (Exception e) {
@@ -66,7 +66,7 @@ public class LibraryController {
      * end point to allowing members to return books
      *
      */
-    @PutMapping(path = "/returnBooks", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(path = "/returnBooks")
     public ResponseEntity<String> returnBooks(@RequestParam(value = "name") String name, @RequestParam("title") List<String> bookTitles) {
         HttpStatus status = HttpStatus.OK;
         try {

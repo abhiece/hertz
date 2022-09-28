@@ -12,10 +12,10 @@ import java.util.stream.Collectors;
 
 import static com.hertz.model.Library.LIBRARY_SINGLETON_INSTANCE;
 
-public class SanityCheckUtil {
+public class SantityCheckUtil {
 
-    private SanityCheckUtil(){
-     throw new UnsupportedOperationException("Util class shouldn't be instantiated!");
+    private SantityCheckUtil() {
+        throw new UnsupportedOperationException("Util class shouldn't be instantiated!");
     }
 
     public static boolean validateBooks(List<Book> books) {
@@ -45,7 +45,7 @@ public class SanityCheckUtil {
                     .stream()
                     .filter(x -> x.getName().equals(name))
                     .collect(Collectors.toList()).get(0);
-        } catch (IndexOutOfBoundsException ex){
+        } catch (IndexOutOfBoundsException ex) {
             throw new LibraryException("You are not a member of this Library. Please register. Thank you!");
         }
         return member;

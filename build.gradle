@@ -16,6 +16,14 @@ repositories {
     mavenLocal()
 }
 
+sourceSets {
+    integrationTest {
+        java.srcDir file('src/integrationTest/java')
+        resources.srcDir file('src/integrationTest/resources')
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
 
 dependencies {
     compileOnly 'org.projectlombok:lombok'
@@ -27,15 +35,54 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
 
+    integrationTestCompileOnly 'org.projectlombok:lombok'
+    integrationTestAnnotationProcessor 'org.projectlombok:lombok'
+
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
         exclude group: 'junit', module: 'junit'
     }
+    integrationTestImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+        exclude group: 'junit', module: 'junit'
+    }
+
+    integrationTestImplementation('org.springframework.boot:spring-boot-starter-web') {
+    }
+}
+    task integrationTest(type: Test, group: 'Verification') {
+        useJUnitPlatform()
+        description = 'Runs the integration tests'
+
+        // option for overriding the application.yml properties
+        systemProperties System.getProperties()
+
+        if (systemProperties.containsKey('sleepSecsBeforeIntegrationTest')) {
+            def sleep_val = systemProperties.get('sleepSecsBeforeIntegrationTest')
+            println 'sleeping ' + sleep_val + ' seconds before running integration tests'
+            sleep_val = sleep_val.toInteger() * 1000
+            sleep(sleep_val as long)
+        }
+
+        testLogging {
+            showStandardStreams = true
+        }
+        testClassesDirs = sourceSets.integrationTest.output.classesDirs
+        classpath = sourceSets.integrationTest.runtimeClasspath + sourceSets.test.runtimeClasspath
+        outputs.upToDateWhen { false }
+
+        check.dependsOn integrationTest
+        integrationTest.mustRunAfter test
+    }
 
     test {
         useJUnitPlatform()
+        testLogging {
+            showStandardStreams = true
+        }
     }
 
+rootProject.tasks.named("processIntegrationTestResources") {
+    duplicatesStrategy = 'include'
 }
-
 

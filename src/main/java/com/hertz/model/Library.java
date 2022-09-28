@@ -15,6 +15,7 @@ public enum Library {
 
     Library() {
         bookSet = ConcurrentHashMap.newKeySet();
+        memberSet = ConcurrentHashMap.newKeySet();
     }
 
     public int addBooks(List<Book> books) {

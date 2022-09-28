@@ -18,9 +18,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class LibraryServiceTest {
 
     LibraryService service = new LibraryService();
-    Set<Member> memberSet;
-    Book book1;
-    Book book2;
+    private Set<Member> memberSet;
+    private Book book1;
+    private Book book2;
 
     @BeforeEach
     void setUp() {

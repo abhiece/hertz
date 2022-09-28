@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.hertz.model.Library.LIBRARY_SINGLETON_INSTANCE;
-import static com.hertz.util.SanityCheckUtil.*;
+import static com.hertz.util.SantityCheckUtil.*;
 
 @Service
 public class LibraryService {

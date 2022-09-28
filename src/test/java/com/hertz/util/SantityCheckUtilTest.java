@@ -3,17 +3,17 @@ package com.hertz.util;
 import com.hertz.exception.LibraryException;
 import com.hertz.model.Book;
 import com.hertz.model.Category;
-import com.hertz.model.Library;
 import com.hertz.model.Member;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
-import static com.hertz.util.SanityCheckUtil.*;
+import static com.hertz.model.Library.LIBRARY_SINGLETON_INSTANCE;
+import static com.hertz.util.SantityCheckUtil.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-class SanityCheckUtilTest {
+class SantityCheckUtilTest {
 
     @Test
     void whenNullBooksValidationFailed() {
@@ -148,7 +148,7 @@ class SanityCheckUtilTest {
         memberSet.add(member1);
         memberSet.add(member2);
         memberSet.add(member3);
-        Library.LIBRARY_SINGLETON_INSTANCE.setMemberSet(memberSet);
+        LIBRARY_SINGLETON_INSTANCE.setMemberSet(memberSet);
     }
 
 }
