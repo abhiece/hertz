@@ -8,6 +8,9 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static com.hertz.model.Library.LIBRARY_SINGLETON_INSTANCE;
 
 public class SanityCheckUtil {
 
@@ -30,9 +33,21 @@ public class SanityCheckUtil {
         if (ObjectUtils.isEmpty(member)) {
             throw new LibraryException("Member doesn't exist!");
         }
-
         if (CollectionUtils.isEmpty(bookTitles)) {
-            throw new LibraryException("Book(s) title is  not valid!");
+            throw new LibraryException("Book(s) title is empty!");
         }
+    }
+
+    public static Member validateMember(String name) {
+        Member member;
+        try {
+            member = LIBRARY_SINGLETON_INSTANCE.getMemberSet()
+                    .stream()
+                    .filter(x -> x.getName().equals(name))
+                    .collect(Collectors.toList()).get(0);
+        } catch (IndexOutOfBoundsException ex){
+            throw new LibraryException("You are not a member of this Library. Please register. Thank you!");
+        }
+        return member;
     }
 }

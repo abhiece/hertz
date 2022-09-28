@@ -24,12 +24,9 @@ public enum Library {
     }
 
     public int removeBooks(List<Book> books) {
-        if (!bookSet.containsAll(books)) {
-            return 0;
-        } else if (bookSet.removeAll(books)) {
-            return bookSet.size();
-        }
-        return 0;
+        bookSet.removeAll(books);
+
+        return bookSet.size();
     }
 
     public Set<Member> getMemberSet() {
