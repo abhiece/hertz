@@ -23,16 +23,15 @@ public class LibraryApp {
         try {
             applicationContext = SpringApplication.run(LibraryApp.class, args);
             log.info("LibraryApp application started");
-            addMembersWithEmptyListOfLoanedBooks();
             log.info("{} Library Members added", addMembersWithEmptyListOfLoanedBooks());
-            addSampleBooks();
+            log.info("{} Sample books added", addSampleBooks());
 
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
         }
     }
 
-    private static void addSampleBooks() {
+    private static int addSampleBooks() {
         List<Category> categories1 = new ArrayList<>();
         categories1.add(Category.MYSTERY);
         categories1.add(Category.SCIENCE_FICTION);
@@ -54,8 +53,9 @@ public class LibraryApp {
         List<Book> books = new ArrayList<>();
         books.add(book1);
         books.add(book2);
-
         LIBRARY_SINGLETON_INSTANCE.addBooks(books);
+
+        return books.size();
     }
 
     private static int addMembersWithEmptyListOfLoanedBooks() {

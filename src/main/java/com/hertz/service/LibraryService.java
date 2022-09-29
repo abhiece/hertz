@@ -16,15 +16,18 @@ import static com.hertz.util.SantityCheckUtil.*;
 @Service
 public class LibraryService {
 
-    public int addBooks(List<Book> books) {
-        int numOfBooksAdded = 0;
+    public int addBooksService(List<Book> books) {
+        int numOfBooksAdded;
         if (validateBooks(books)) {
             numOfBooksAdded = LIBRARY_SINGLETON_INSTANCE.addBooks(books);
+        } else {
+            throw new LibraryException(books + " Book(s) is not valid!");
         }
+
         return numOfBooksAdded;
     }
 
-    public int removeBooks(List<Book> books) {
+    public int removeBooksService(List<Book> books) {
         int numOfBooksRemoved = 0;
         if (validateBooks(books)) {
             numOfBooksRemoved = LIBRARY_SINGLETON_INSTANCE.removeBooks(books);
@@ -32,7 +35,7 @@ public class LibraryService {
         return numOfBooksRemoved;
     }
 
-    public List<Book> loanBooks(String name, List<String> bookTitles) {
+    public List<Book> loanBooksService(String name, List<String> bookTitles) {
         List<Book> loanedBookList = new ArrayList<>();
         Member member = validateMember(name);
         validateMemberAndBooks(member, bookTitles);
@@ -61,7 +64,7 @@ public class LibraryService {
         return loanedBookList;
     }
 
-    public List<Book> returnBooks(String name, List<String> bookTitles) {
+    public List<Book> returnBooksService(String name, List<String> bookTitles) {
         Member member = validateMember(name);
         validateMemberAndBooks(member, bookTitles);
 

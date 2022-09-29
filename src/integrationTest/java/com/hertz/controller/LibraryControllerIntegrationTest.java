@@ -7,8 +7,10 @@ import com.hertz.model.Book;
 import com.hertz.model.Category;
 import com.hertz.model.Member;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -22,7 +24,8 @@ import javax.annotation.Resource;
 import java.util.*;
 
 import static com.hertz.model.Library.LIBRARY_SINGLETON_INSTANCE;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = LibraryTestApplication.class)
 @WebAppConfiguration
 @Slf4j
+@TestInstance(Lifecycle.PER_CLASS)
 class LibraryControllerIntegrationTest {
 
     @Resource
@@ -37,17 +41,16 @@ class LibraryControllerIntegrationTest {
 
     protected MockMvc mockMvc;
 
-    @BeforeEach
+    @BeforeAll
     public void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(this.webApplicationContext).build();
-        addMembersWithEmptyListOfLoanedBooks();
+        log.info("LibraryApp application started");
         log.info("{} Library Members added", addMembersWithEmptyListOfLoanedBooks());
-
     }
 
     @Test
-    void addBooksSuccessfully() throws Exception {
-        mockMvc
+    void testAddBooksSuccessfully() throws Exception {
+        MvcResult mvcResult = mockMvc
                 .perform(post("/library/addBooks")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content("[{\n" +
@@ -69,6 +72,8 @@ class LibraryControllerIntegrationTest {
                                 "\t}]\n")
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(print()).andExpect(status().is(201)).andReturn();
+        String contentAsString = mvcResult.getResponse().getContentAsString();
+        assertEquals("2 no. of books Added to Library!", contentAsString);
         Set<Book> bookSet = LIBRARY_SINGLETON_INSTANCE.getBookSet();
         assertEquals(2, bookSet.size());
         assertTrue(bookSet.stream().anyMatch(x -> x.getTitle().equals("Title1")));
@@ -76,13 +81,53 @@ class LibraryControllerIntegrationTest {
     }
 
     @Test
-    void removeBooksSuccessfully() throws Exception {
-        addSampleBooks();
-        mockMvc
-                .perform(delete("/library/removeBooks")
+    void testAddSameBookThrowsException() throws Exception {
+        log.info("{} Sample books added", addSampleBooks("Title9", "Title10"));
+        MvcResult mvc2ndResult = mockMvc
+                .perform(post("/library/addBooks")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content("[{\n" +
+                                "\t\t\"title\": \"Title9\",\n" +
+                                "\t\t\"author\": \"Author1\",\n" +
+                                "\t\t\"categories\": [\n" +
+                                "\t\t\t\"POETRY\",\n" +
+                                "\t\t\t\"MYSTERY\"\n" +
+                                "\t\t]\n" +
+                                "\n" +
+                                "\t}]\n")
+                        .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(print()).andExpect(status().is(400)).andReturn();
+        String contentAsString = mvc2ndResult.getResponse().getContentAsString();
+        assertEquals(" Book(s) are already there in the library.", contentAsString);
+    }
+
+    @Test
+    void testAddBooksWithoutAllDetailsThrowsException() throws Exception {
+        MvcResult mvcResult = mockMvc
+                .perform(post("/library/addBooks")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content("[{\n" +
                                 "\t\t\"title\": \"Title1\",\n" +
+                                "\t\t\"categories\": [\n" +
+                                "\t\t\t\"POETRY\",\n" +
+                                "\t\t\t\"MYSTERY\"\n" +
+                                "\t\t]\n" +
+                                "\n" +
+                                "\t}]\n")
+                        .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(print()).andExpect(status().is(400)).andReturn();
+        String contentAsString = mvcResult.getResponse().getContentAsString();
+        assertEquals("[Book(title=Title1, author=null, categories=[POETRY, MYSTERY])] Book(s) is not valid!", contentAsString);
+    }
+
+    @Test
+    void testRemoveBooksSuccessfully() throws Exception {
+        log.info("{} Sample books added", addSampleBooks("Title3", "Title4"));
+        MvcResult mvcResult = mockMvc
+                .perform(delete("/library/removeBooks")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content("[{\n" +
+                                "\t\t\"title\": \"Title3\",\n" +
                                 "\t\t\"author\": \"Author1\",\n" +
                                 "\t\t\"categories\": [\n" +
                                 "\t\t\t\"POETRY\",\n" +
@@ -92,60 +137,95 @@ class LibraryControllerIntegrationTest {
                                 "\t}]\n")
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(print()).andExpect(status().is(200)).andReturn();
-        Set<Book> bookSet = LIBRARY_SINGLETON_INSTANCE.getBookSet();
-        assertEquals(1, bookSet.size());
-        assertFalse(bookSet.stream().anyMatch(x -> x.getTitle().equals("Title1")));
-        assertTrue(bookSet.stream().anyMatch(x -> x.getTitle().equals("Title2")));
+        String contentAsString = mvcResult.getResponse().getContentAsString();
+        assertEquals("1 no. of books removed from Library!", contentAsString);
     }
 
     @Test
-    public void testLoanBooksSuccessfully() throws Exception {
-        addSampleBooks();
-        MvcResult result = mockMvc
-                .perform(get("/library/loanBooks?name=John&title=Title1&title=Title2")
+    void testRemoveBookWhichIsNotThereThrowsException() throws Exception {
+        MvcResult mvcResult = mockMvc
+                .perform(delete("/library/removeBooks")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content("[{\n" +
+                                "\t\t\"title\": \"Title5\",\n" +
+                                "\t\t\"author\": \"Author1\",\n" +
+                                "\t\t\"categories\": [\n" +
+                                "\t\t\t\"POETRY\",\n" +
+                                "\t\t\t\"MYSTERY\"\n" +
+                                "\t\t]\n" +
+                                "\n" +
+                                "\t}]\n")
+                        .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(print()).andExpect(status().is(400)).andReturn();
+        String contentAsString = mvcResult.getResponse().getContentAsString();
+        assertEquals(" Book(s) doesn't belong to library.", contentAsString);
+    }
+
+    @Test
+    public void testLoanBookSuccessfully() throws Exception {
+        log.info("{} Sample books added", addSampleBooks("Title5", "Title6"));
+        MvcResult mvcResult = mockMvc
+                .perform(get("/library/loanBooks?name=Harry&title=Title5&title=Title6")
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(print()).andExpect(status().is(200)).andReturn();
-        MockHttpServletResponse response = result.getResponse();
+        MockHttpServletResponse response = mvcResult.getResponse();
         String contentAsString = response.getContentAsString();
-        Set<Book> bookSet = LIBRARY_SINGLETON_INSTANCE.getBookSet();
-        assertEquals(0, bookSet.size());
         ObjectMapper objectMapper = new ObjectMapper();
-        List<Book> books = objectMapper.readValue(contentAsString,new TypeReference<List<Book>>(){});
+        List<Book> books = objectMapper.readValue(contentAsString,new TypeReference<>(){});
         assertEquals(2, books.size());
-        assertTrue(books.stream().anyMatch(x -> x.getTitle().equals("Title1")));
-        assertTrue(books.stream().anyMatch(x -> x.getTitle().equals("Title2")));
+        assertTrue(books.stream().anyMatch(x -> x.getTitle().equals("Title5")));
+        assertTrue(books.stream().anyMatch(x -> x.getTitle().equals("Title6")));
     }
 
     @Test
-    void returnBooks() throws Exception {
-        addSampleBooks();
+    public void testLoanBookWhichIsNotThereThrowsException() throws Exception {
+        MvcResult mvcResult = mockMvc
+                .perform(get("/library/loanBooks?name=John&title=Title15")
+                        .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(print()).andExpect(status().is(400)).andReturn();
+        String contentAsString = mvcResult.getResponse().getContentAsString();
+        assertEquals("[Title15] Book(s) Not found", contentAsString);
+    }
+
+    @Test
+    public void testLoanBooksWhenHaveAnOutstandingBookThrowsException() throws Exception {
+        log.info("{} Sample books added", addSampleBooks("Title7", "Title8"));
+        MvcResult mvcResult = mockMvc
+                .perform(get("/library/loanBooks?name=Larry&title=Title7&title=Title8")
+                        .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(print()).andExpect(status().is(200)).andReturn();
+
+        MvcResult mvcResult2 = mockMvc
+                .perform(get("/library/loanBooks?name=John&title=Title5")
+                        .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(print()).andExpect(status().is(400)).andReturn();
+        String contentAsString2 = mvcResult2.getResponse().getContentAsString();
+        assertEquals("You have an outstanding loaned book(s). Please return before requesting another loan of book!", contentAsString2);
+    }
+
+    @Test
+    void testReturnBookSuccessfully() throws Exception {
+        log.info("{} Sample books added", addSampleBooks("Title11", "Title12"));
         mockMvc
-                .perform(get("/library/loanBooks?name=John&title=Title1&title=Title2")
+                .perform(get("/library/loanBooks?name=John&title=Title11&title=Title12")
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(print()).andExpect(status().is(200)).andReturn();
-        Set<Book> bookSetAfterLoan = LIBRARY_SINGLETON_INSTANCE.getBookSet();
-        assertEquals(0, bookSetAfterLoan.size());
-        MvcResult result = mockMvc
-                .perform(put("/library/returnBooks?name=John&title=Title1")
+        MvcResult mvcResult = mockMvc
+                .perform(put("/library/returnBooks?name=John&title=Title11")
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(print()).andExpect(status().is(200)).andReturn();
-        Set<Book> bookSetAfterReturn = LIBRARY_SINGLETON_INSTANCE.getBookSet();
-        assertEquals(1, bookSetAfterReturn.size());
-        assertTrue(bookSetAfterReturn.stream().anyMatch(x -> x.getTitle().equals("Title1")));
-        assertFalse(bookSetAfterReturn.stream().anyMatch(x -> x.getTitle().equals("Title2")));
+
+        MockHttpServletResponse response = mvcResult.getResponse();
+        String contentAsString = response.getContentAsString();
+        assertEquals("Thank you for returning book(s) ==>>[Title11]", contentAsString);
     }
 
-    private void addSampleBooks() {
-        List<Book> books = getBooks();
-        LIBRARY_SINGLETON_INSTANCE.addBooks(books);
-    }
-
-    private List<Book> getBooks() {
+    private int addSampleBooks(String title1, String title2) {
         List<Category> categories1 = new ArrayList<>();
         categories1.add(Category.POETRY);
         categories1.add(Category.MYSTERY);
         Book book1 = Book.builder()
-                .title("Title1")
+                .title(title1)
                 .author("Author1")
                 .categories(categories1)
                 .build();
@@ -154,7 +234,7 @@ class LibraryControllerIntegrationTest {
         categories2.add(Category.THRILLER);
         categories2.add(Category.SCIENCE_FICTION);
         Book book2 = Book.builder()
-                .title("Title2")
+                .title(title2)
                 .author("Author2")
                 .categories(categories2)
                 .build();
@@ -162,7 +242,9 @@ class LibraryControllerIntegrationTest {
         List<Book> books = new ArrayList<>();
         books.add(book1);
         books.add(book2);
-        return books;
+        LIBRARY_SINGLETON_INSTANCE.addBooks(books);
+
+        return books.size();
     }
 
     private int addMembersWithEmptyListOfLoanedBooks() {

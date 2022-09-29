@@ -7,12 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
-@Controller
+@RestController
 @Slf4j
 @RequestMapping(path = "/library", produces = MediaType.APPLICATION_JSON_VALUE)
 public class LibraryController {
@@ -27,13 +27,18 @@ public class LibraryController {
     @PostMapping(path = "/addBooks", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> addBooks(@RequestBody List<Book> books) {
         HttpStatus status = HttpStatus.CREATED;
+        int numBooksAdded;
+        String message = " no. of books Added to Library!";
         try {
-            libraryService.addBooks(books);
+            numBooksAdded = libraryService.addBooksService(books);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            String eMessage = e.getMessage();
+            log.error(eMessage, e);
+            message = eMessage;
             status = HttpStatus.BAD_REQUEST;
+            return new ResponseEntity<>(message, status);
         }
-        return new ResponseEntity<>(status);
+        return new ResponseEntity<>(numBooksAdded + message, status);
     }
 
     /*
@@ -43,13 +48,18 @@ public class LibraryController {
     @DeleteMapping(path = "/removeBooks", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> removeBooks(@RequestBody List<Book> books) {
         HttpStatus status = HttpStatus.OK;
+        int numBooksRemoved = 0;
+        String message = " no. of books removed from Library!";
         try {
-            libraryService.removeBooks(books);
+            numBooksRemoved = libraryService.removeBooksService(books);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            String eMessage = e.getMessage();
+            log.error(eMessage, e);
+            message = eMessage;
             status = HttpStatus.BAD_REQUEST;
+            return new ResponseEntity<>(message, status);
         }
-        return new ResponseEntity<>(status);
+        return new ResponseEntity<>(numBooksRemoved + message, status);
     }
 
     /*
@@ -57,9 +67,19 @@ public class LibraryController {
      *
      */
     @GetMapping(path = "/loanBooks")
-    @ResponseBody
-    public List<Book> loanBooks(@RequestParam(value = "name") String name, @RequestParam("title") List<String> bookTitles) {
-        return libraryService.loanBooks(name, bookTitles);
+    public ResponseEntity<Object> loanBooks(@RequestParam(value = "name") String name, @RequestParam("title") List<String> bookTitles) {
+        HttpStatus status = HttpStatus.OK;
+        List<Book> bookList = new ArrayList<>();
+        try {
+            bookList = libraryService.loanBooksService(name, bookTitles);
+        } catch (Exception e) {
+            String eMessage = e.getMessage();
+            log.error(eMessage, e);
+            status = HttpStatus.BAD_REQUEST;
+            return new ResponseEntity<>(eMessage, status);
+        }
+
+        return new ResponseEntity<>(bookList, status);
     }
 
     /*
@@ -69,12 +89,16 @@ public class LibraryController {
     @PutMapping(path = "/returnBooks")
     public ResponseEntity<String> returnBooks(@RequestParam(value = "name") String name, @RequestParam("title") List<String> bookTitles) {
         HttpStatus status = HttpStatus.OK;
+        String message = "Thank you for returning book(s) ==>>";
         try {
-            libraryService.returnBooks(name, bookTitles);
+            libraryService.returnBooksService(name, bookTitles);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            String eMessage = e.getMessage();
+            log.error(eMessage, e);
+            message = eMessage;
             status = HttpStatus.BAD_REQUEST;
+            return new ResponseEntity<>(message, status);
         }
-        return new ResponseEntity<>(status);
+        return new ResponseEntity<>(message + bookTitles.toString(), status);
     }
 }

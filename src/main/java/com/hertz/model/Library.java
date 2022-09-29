@@ -1,5 +1,7 @@
 package com.hertz.model;
 
+import com.hertz.exception.LibraryException;
+
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,15 +21,23 @@ public enum Library {
     }
 
     public int addBooks(List<Book> books) {
-        bookSet.addAll(books);
+        if (!bookSet.containsAll(books)) {
+            bookSet.addAll(books);
+        } else {
+            throw new LibraryException(" Book(s) are already there in the library.");
+        }
 
-        return bookSet.size();
+        return books.size();
     }
 
     public int removeBooks(List<Book> books) {
-        bookSet.removeAll(books);
+        if (bookSet.containsAll(books)) {
+            bookSet.removeAll(books);
+        } else {
+            throw new LibraryException(" Book(s) doesn't belong to library.");
+        }
 
-        return bookSet.size();
+        return books.size();
     }
 
     public Set<Member> getMemberSet() {
